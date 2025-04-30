@@ -5,7 +5,7 @@
         ".glb",
         ".gltf"
       ],
-      "opener": "http://192.168.2.2:8000/templates/model3d.html"
+      "opener": "https://github.com/EndlessJour9527/jsar-model-viewer/blob/main/src/model3d.html"
     },
     {
       "extensions": [
