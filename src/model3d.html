@@ -12,13 +12,12 @@
   <script type="module">
     import * as  THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
     try {
 
       console.log('html start');
       const rotateRootName = 'rotate-component-container';
       let urlParams = null;
-      modelUrl = "https://rokid-xr.oss-cn-hangzhou.aliyuncs.com/dev/RokidTerminalMuseum/Apple2.glb";
+      let modelUrl = "https://rokid-xr.oss-cn-hangzhou.aliyuncs.com/dev/RokidTerminalMuseum/Apple2.glb";
 
       let isPlayAnimation = false;
       try {
@@ -65,7 +64,6 @@
         selectingController: null,
         isSelecting: false,
         initialControllerPosition: new THREE.Vector3(),
-        initialControllerQuaternion: new THREE.Quaternion(),
         initialObjectQuaternion: new THREE.Quaternion(),
         raycaster: new THREE.Raycaster(),
         // 添加可重用对象
@@ -73,8 +71,6 @@
         _quaternionX: new THREE.Quaternion(),
         _quaternionY: new THREE.Quaternion(),
         _targetQuaternion: new THREE.Quaternion(),
-        _euler: new THREE.Euler(),
-        _initialEuler: new THREE.Euler(),
       };
 
       // 动画相关变量
@@ -312,7 +308,7 @@
           const {
             selectedObject, isSelecting, selectingController, raycaster,
             initialControllerPosition, initialObjectQuaternion,
-            _deltaPosition, _quaternionX, _quaternionY, _targetQuaternion, _euler, _initialEuler
+            _deltaPosition, _quaternionX, _quaternionY, _targetQuaternion
           } = xrControl;
 
           if (!isSelecting || !selectedObject) return;
@@ -339,21 +335,70 @@
               _targetQuaternion.copy(initialObjectQuaternion).multiply(_quaternionX);
             }
           } else {
-            const deltaRotationX = _deltaPosition.y * rotationSpeed;// Math.min(maxRotation, _deltaPosition.y * rotationSpeed);
-            const deltaRotationY = -_deltaPosition.x * rotationSpeed;// Math.min(maxRotation, -_deltaPosition.x * rotationSpeed);
+            // const deltaRotationX = _deltaPosition.y * rotationSpeed;// Math.min(maxRotation, _deltaPosition.y * rotationSpeed);
+            // const deltaRotationY = -_deltaPosition.x * rotationSpeed;// Math.min(maxRotation, -_deltaPosition.x * rotationSpeed);
 
-            // 重用四元数对象
-            _quaternionX.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -deltaRotationX);
-            _quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -deltaRotationY);
+            // // 重用四元数对象
+            // _quaternionX.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -deltaRotationX);
+            // _quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -deltaRotationY);
 
-            // 重用目标四元数
+            // // 重用目标四元数
+            // _targetQuaternion.copy(initialObjectQuaternion)
+            //   .multiply(_quaternionY)
+            //   .multiply(_quaternionX);
+
+            // 计算世界坐标系下的旋转
+            const worldUp = new THREE.Vector3(0, 1, 0); // 保持Z轴不变
+            const worldRight = new THREE.Vector3(1, 0, 0);
+
+            // 只计算X/Y平面旋转
+            const deltaRotationX = _deltaPosition.y * rotationSpeed;
+            const deltaRotationY = -_deltaPosition.x * rotationSpeed;
+
+            // 创建基于世界坐标系的旋转四元数
+            _quaternionX.setFromAxisAngle(worldRight, deltaRotationX);
+            _quaternionY.setFromAxisAngle(worldUp, deltaRotationY);
+
+            // 组合旋转
             _targetQuaternion.copy(initialObjectQuaternion)
-              .multiply(_quaternionY)
-              .multiply(_quaternionX);
+              .multiply(_quaternionX)
+              .multiply(_quaternionY);
+
+            // 应用旋转
+            selectedObject.quaternion.slerp(_targetQuaternion, 0.1);
+
+            // // 1. 获取当前世界矩阵并提取Z轴方向
+            // const worldMatrix = new THREE.Matrix4();
+            // selectedObject.updateMatrixWorld();
+            // worldMatrix.copy(selectedObject.matrixWorld);
+
+            // const worldZ = new THREE.Vector3();
+            // worldMatrix.extractBasis(new THREE.Vector3(), new THREE.Vector3(), worldZ);
+
+            // // 2. 计算局部XY旋转
+            // const deltaRotationX = _deltaPosition.y * rotationSpeed;
+            // const deltaRotationY = -_deltaPosition.x * rotationSpeed;
+
+            // _quaternionX.setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaRotationX);
+            // _quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaRotationY);
+
+            // // 3. 应用局部旋转
+            // _targetQuaternion.copy(initialObjectQuaternion)
+            //   .multiply(_quaternionX)
+            //   .multiply(_quaternionY);
+
+            // // 4. 约束世界Z轴
+            // const tempQuat = new THREE.Quaternion();
+            // tempQuat.setFromUnitVectors(worldZ, new THREE.Vector3(0, 0, 1));
+            // _targetQuaternion.premultiply(tempQuat.invert());
+
+            // selectedObject.quaternion.slerp(_targetQuaternion, 0.1);
+
           }
           // 应用旋转
           // selectedObject.quaternion.copy(_targetQuaternion);
           selectedObject.quaternion.slerp(_targetQuaternion, 0.1);
+          console.log('handleIntersection', selectedObject.quaternion);
         }
 
 
