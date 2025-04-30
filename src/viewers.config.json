@@ -5,7 +5,7 @@
         ".glb",
         ".gltf"
       ],
-      "opener": "http://192.168.2.3:8000/src/model3d.html"
+      "opener": "http://192.168.2.3:8000/jsar-model-viewer/src/model3d.html"
     },
     {
       "extensions": [
