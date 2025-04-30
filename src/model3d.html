@@ -48,7 +48,7 @@
       }
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(75, 1.0, 0.1, 1000);
-      const isShowLine = false;
+      const isShowLine = true;
       const controllerIndex = 1;//gl ? 1 : 1;
       const rotationSpeed = 15.0;
       const enableSingleAxisRotation = false;
@@ -316,27 +316,28 @@
 
           // 重用向量对象计算位置差
           _deltaPosition.copy(point).sub(initialControllerPosition);
+          initialControllerPosition.z = point.z;
 
           if (enableSingleAxisRotation) {
             // 计算X和Y轴的位移绝对值
-            const absX = Math.abs(_deltaPosition.x);
-            const absY = Math.abs(_deltaPosition.y);
+            const absX = Math.abs(deltaPosition.x);
+            const absY = Math.abs(deltaPosition.y);
 
             // 根据哪个轴偏移更大决定旋转哪个轴
             if (absX > absY) {
               // 只旋转Y轴
-              const deltaRotationY = -_deltaPosition.x * rotationSpeed;
+              const deltaRotationY = -deltaPosition.x * rotationSpeed;
               _quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaRotationY);
               _targetQuaternion.copy(initialObjectQuaternion).multiply(_quaternionY);
             } else {
               // 只旋转X轴
-              const deltaRotationX = -_deltaPosition.y * rotationSpeed;
+              const deltaRotationX = -deltaPosition.y * rotationSpeed;
               _quaternionX.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -deltaRotationX);
               _targetQuaternion.copy(initialObjectQuaternion).multiply(_quaternionX);
             }
           } else {
-            // const deltaRotationX = _deltaPosition.y * rotationSpeed;// Math.min(maxRotation, _deltaPosition.y * rotationSpeed);
-            // const deltaRotationY = -_deltaPosition.x * rotationSpeed;// Math.min(maxRotation, -_deltaPosition.x * rotationSpeed);
+            // const deltaRotationX = deltaPosition.y * rotationSpeed;// Math.min(maxRotation, deltaPosition.y * rotationSpeed);
+            // const deltaRotationY = -deltaPosition.x * rotationSpeed;// Math.min(maxRotation, -deltaPosition.x * rotationSpeed);
 
             // // 重用四元数对象
             // _quaternionX.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -deltaRotationX);
@@ -347,58 +348,44 @@
             //   .multiply(_quaternionY)
             //   .multiply(_quaternionX);
 
-            // 计算世界坐标系下的旋转
-            const worldUp = new THREE.Vector3(0, 1, 0); // 保持Z轴不变
-            const worldRight = new THREE.Vector3(1, 0, 0);
 
-            // 只计算X/Y平面旋转
-            const deltaRotationX = _deltaPosition.y * rotationSpeed;
-            const deltaRotationY = -_deltaPosition.x * rotationSpeed;
+            // 添加缩放控制 - 使用Z轴变化
+            const scaleDelta = _deltaPosition.z; // 缩放灵敏度系数
+            const currentScale = selectedObject.scale.x; // 假设是均匀缩放
+            const newScale = Math.max(0.1, Math.min(5.0, currentScale + scaleDelta)); // 限制缩放范围0.1-5.0
+            selectedObject.scale.set(newScale, newScale, newScale);
 
-            // 创建基于世界坐标系的旋转四元数
-            _quaternionX.setFromAxisAngle(worldRight, deltaRotationX);
-            _quaternionY.setFromAxisAngle(worldUp, deltaRotationY);
+            // // 计算世界坐标系下的旋转
+            // const worldUp = new THREE.Vector3(0, 1, 0); // 保持Z轴不变
+            // const worldRight = new THREE.Vector3(1, 0, 0);
 
-            // 组合旋转
-            _targetQuaternion.copy(initialObjectQuaternion)
-              .multiply(_quaternionX)
-              .multiply(_quaternionY);
-
-            // 应用旋转
-            selectedObject.quaternion.slerp(_targetQuaternion, 0.1);
-
-            // // 1. 获取当前世界矩阵并提取Z轴方向
-            // const worldMatrix = new THREE.Matrix4();
-            // selectedObject.updateMatrixWorld();
-            // worldMatrix.copy(selectedObject.matrixWorld);
-
-            // const worldZ = new THREE.Vector3();
-            // worldMatrix.extractBasis(new THREE.Vector3(), new THREE.Vector3(), worldZ);
-
-            // // 2. 计算局部XY旋转
+            // // 只计算X/Y平面旋转
             // const deltaRotationX = _deltaPosition.y * rotationSpeed;
             // const deltaRotationY = -_deltaPosition.x * rotationSpeed;
 
-            // _quaternionX.setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaRotationX);
-            // _quaternionY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaRotationY);
+            // // 创建基于世界坐标系的旋转四元数
+            // _quaternionX.setFromAxisAngle(worldRight, deltaRotationX);
+            // _quaternionY.setFromAxisAngle(worldUp, deltaRotationY);
 
-            // // 3. 应用局部旋转
+            // // 组合旋转
             // _targetQuaternion.copy(initialObjectQuaternion)
             //   .multiply(_quaternionX)
             //   .multiply(_quaternionY);
 
-            // // 4. 约束世界Z轴
-            // const tempQuat = new THREE.Quaternion();
-            // tempQuat.setFromUnitVectors(worldZ, new THREE.Vector3(0, 0, 1));
-            // _targetQuaternion.premultiply(tempQuat.invert());
-
-            // selectedObject.quaternion.slerp(_targetQuaternion, 0.1);
-
+            // 计算局部XY旋转(保持局部Z不变)
+            const deltaRotationX = _deltaPosition.y * rotationSpeed;
+            const deltaRotationY = -_deltaPosition.x * rotationSpeed;
+            // 创建基于初始状态的旋转四元数
+            const quatX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaRotationX);
+            const quatY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaRotationY);
+            // 组合旋转(先Y后X，可以减少万向节锁问题)
+            _targetQuaternion.copy(initialObjectQuaternion)
+              .multiply(quatY)
+              .multiply(quatX);
           }
           // 应用旋转
           // selectedObject.quaternion.copy(_targetQuaternion);
           selectedObject.quaternion.slerp(_targetQuaternion, 0.1);
-          console.log('handleIntersection', selectedObject.quaternion);
         }
 
 
