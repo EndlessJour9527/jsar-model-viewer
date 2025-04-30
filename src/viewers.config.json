@@ -1,0 +1,18 @@
+{
+  "viewers": [
+    {
+      "extensions": [
+        ".glb",
+        ".gltf"
+      ],
+      "opener": "http://192.168.2.2:8000/templates/model3d.html"
+    },
+    {
+      "extensions": [
+        ".jpg",
+        ".png"
+      ],
+      "opener": "/path/to/local/opener"
+    }
+  ]
+}
