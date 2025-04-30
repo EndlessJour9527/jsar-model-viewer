@@ -349,11 +349,11 @@
             //   .multiply(_quaternionX);
 
 
-            // 添加缩放控制 - 使用Z轴变化
-            const scaleDelta = _deltaPosition.z; // 缩放灵敏度系数
-            const currentScale = selectedObject.scale.x; // 假设是均匀缩放
-            const newScale = Math.max(0.1, Math.min(5.0, currentScale + scaleDelta)); // 限制缩放范围0.1-5.0
-            selectedObject.scale.set(newScale, newScale, newScale);
+            // // 添加缩放控制 - 使用Z轴变化
+            // const scaleDelta = _deltaPosition.z; // 缩放灵敏度系数
+            // const currentScale = selectedObject.scale.x; // 假设是均匀缩放
+            // const newScale = Math.max(0.1, Math.min(5.0, currentScale + scaleDelta)); // 限制缩放范围0.1-5.0
+            // selectedObject.scale.set(newScale, newScale, newScale);
 
             // // 计算世界坐标系下的旋转
             // const worldUp = new THREE.Vector3(0, 1, 0); // 保持Z轴不变
@@ -372,16 +372,22 @@
             //   .multiply(_quaternionX)
             //   .multiply(_quaternionY);
 
-            // 计算局部XY旋转(保持局部Z不变)
+            // 使用世界坐标系的X和Y轴进行旋转
+            const worldX = new THREE.Vector3(1, 0, 0);
+            const worldY = new THREE.Vector3(0, 1, 0);
+
+            // 计算旋转角度
             const deltaRotationX = _deltaPosition.y * rotationSpeed;
             const deltaRotationY = -_deltaPosition.x * rotationSpeed;
-            // 创建基于初始状态的旋转四元数
-            const quatX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaRotationX);
-            const quatY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaRotationY);
-            // 组合旋转(先Y后X，可以减少万向节锁问题)
+
+            // 创建基于世界坐标系的旋转四元数
+            _quaternionX.setFromAxisAngle(worldX, deltaRotationX);
+            _quaternionY.setFromAxisAngle(worldY, deltaRotationY);
+
+            // 组合旋转(先Y后X)
             _targetQuaternion.copy(initialObjectQuaternion)
-              .multiply(quatY)
-              .multiply(quatX);
+              .multiply(_quaternionY)
+              .multiply(_quaternionX);
           }
           // 应用旋转
           // selectedObject.quaternion.copy(_targetQuaternion);
