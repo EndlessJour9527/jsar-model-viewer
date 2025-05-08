@@ -1,0 +1,9 @@
+# 忽略 Python 服务器文件
+pyserver.py
+
+# 其他可能需要忽略的常见文件
+__pycache__/
+*.py[cod]
+*.log
+*.key
+*.crt

@@ -17,8 +17,8 @@
       console.log('html start');
       const rotateRootName = 'rotate-component-container';
       let urlParams = null;
-      let modelUrl = "https://rokid-xr.oss-cn-hangzhou.aliyuncs.com/dev/RokidTerminalMuseum/Apple2.glb";
-
+      let modelUrl = 'https://rokid-xr.oss-cn-hangzhou.aliyuncs.com/dev/RokidTerminalMuseum/Apple_II_Computer.glb';
+      modelUrl = 'http://192.168.2.2:8000/assets/Apple_II_Computer_mini.glb';
       let isPlayAnimation = false;
       try {
         // 解析 URL 参数
@@ -44,7 +44,7 @@
         isPlayAnimation = params.playAnimation ? params.playAnimation.toLowerCase() === 'true' : false;
         console.log('modelUrl param', params, 'modelUrl:', modelUrl, isPlayAnimation);
       } catch (error) {
-        console.error('html start', error);
+        console.error('html', error);
       }
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(75, 1.0, 0.1, 1000);
